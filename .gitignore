@@ -3,3 +3,4 @@
 .metals
 data/Mnist/*.csv
 target/
+*.iml
