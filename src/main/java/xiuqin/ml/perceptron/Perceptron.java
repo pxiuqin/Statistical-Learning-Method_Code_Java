@@ -13,15 +13,16 @@ public class Perceptron {
         //1、读取训练数据
         String filePath = "data/Mnist/mnist_train.csv";
         System.out.println("read file:" + filePath);
-        DataWrapper trainData = perceptron.readTrainingData(filePath);
+        DataWrapper trainData = perceptron.readData(filePath);
         trainData.rebuildLabel();
         trainData.rebuildData();
 
         //2、读取测试数据
         filePath = "data/Mnist/mnist_test.csv";
         System.out.println("read file:" + filePath);
-        DataWrapper testData = perceptron.readTrainingData(filePath);
+        DataWrapper testData = perceptron.readData(filePath);
         testData.rebuildLabel();
+        testData.rebuildData();
 
         //3、训练数据获取权重
         System.out.println("training data");
@@ -64,7 +65,7 @@ public class Perceptron {
         //Mnsit data have 0-9 lable, two class for 1 of >=5, -1 of <5
         public void rebuildLabel() {
             for (int i = 0; i < labelArr.columns(); i++) {
-                labelArr.put(0, i, labelArr.getFloat(0, i) >= 5 ? 1 : -1);
+                labelArr.putScalar(i, labelArr.getFloat(i) >= 5 ? 1 : -1);
             }
         }
 
@@ -74,35 +75,35 @@ public class Perceptron {
         }
     }
 
-    private DataWrapper readTrainingData(String path) {
-        DataWrapper trainData = new DataWrapper();
+    private DataWrapper readData(String path) {
+        DataWrapper data = new DataWrapper();
         String separator = ",";
         try {
             INDArray result = FileUtils.readFromText(path, separator);
 
             //拆分第一列数据为label
-            trainData.setLabelArr(result.getColumn(0));
+            data.setLabelArr(result.getColumn(0));
 
             //剩下的数据为data
             int[] cols = new int[(result.columns() - 1)];
             for (int i = 0; i < result.columns() - 1; i++) {
                 cols[i] = i + 1;
             }
-            trainData.setDataArr(result.getColumns(cols));
+            data.setDataArr(result.getColumns(cols));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            return trainData;
+            return data;
         }
     }
 
     //perceptron model training
     private void modelTraining(DataWrapper trainData, int iterator) {
-        //labelAtr.T
-        INDArray label = trainData.labelArr.reshape(trainData.labelArr.columns(), 1);
+        //labelAtr
+        INDArray label = trainData.labelArr;
 
         //create init w
-        trainData.w = Nd4j.zeros(1, trainData.dataArr.columns());
+        trainData.w = Nd4j.zeros(trainData.dataArr.columns());
 
         //create init b
         trainData.b = 0;
@@ -120,21 +121,21 @@ public class Perceptron {
                 double yi = label.getDouble(i);
 
                 //SGD
-                if (-1 * yi * (trainData.w.mul(xi.reshape(xi.columns(),1)).getDouble(0, 0) + trainData.b) >= 0) {
+                if (-1 * yi * (trainData.w.mmul(xi.reshape(xi.columns(), 1)).getDouble(0, 0) + trainData.b) >= 0) {
                     trainData.w = trainData.w.add(xi.mul(yi * h));
                     trainData.b += yi * h;
                 }
             }
 
             //print training progressing
-            System.out.println(String.format("Round %d:%d", k, iterator));
+            System.out.println(String.format("Round %d:%d", k + 1, iterator));
         }
     }
 
     //model test
     private double modelTest(DataWrapper testData) {
-        //labelAttr.T
-        INDArray label = testData.labelArr.reshape(testData.labelArr.columns(), 1);
+        //labelAttr
+        INDArray label = testData.labelArr;
 
         //infer error data
         long errorCnt = 0;
@@ -147,7 +148,7 @@ public class Perceptron {
             double yi = label.getDouble(i);
 
             //compute result
-            double result = -1 * yi * (testData.w.mul(xi.reshape(xi.columns(),1)).getDouble(0, 0) + testData.b);
+            double result = -1 * yi * (testData.w.mmul(xi.reshape(xi.columns(), 1)).getDouble(0, 0) + testData.b);
 
             //infer error
             if (result >= 0) {
