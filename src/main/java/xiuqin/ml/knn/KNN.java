@@ -2,6 +2,8 @@ package xiuqin.ml.knn;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.EqualsCondition;
 import xiuqin.ml.ModelBase;
 
 public class KNN extends ModelBase {
@@ -47,7 +49,7 @@ public class KNN extends ModelBase {
      */
     private long getClosest(INDArray sample, int topK, int labels) {
         //distance of one sample to training sample
-        INDArray distList = Nd4j.zeros(this.trainDataArr.rows());
+        INDArray distArray = Nd4j.zeros(this.trainDataArr.rows());
 
         for (int i = 0; i < this.trainDataArr.rows(); i++) {
             INDArray each = this.trainDataArr.getRow(i);
@@ -56,28 +58,28 @@ public class KNN extends ModelBase {
             double dist = calcDistance(sample, each);
 
             //add distList
-            distList.putScalar(i, dist);
+            distArray.putScalar(i, dist);
         }
 
         //sort the distList
-        int[] cols = new int[topK];
-        for (int i = 0; i < topK; i++) {
-            cols[i] = i;
-        }
-        INDArray topKList = Nd4j.sort(distList, false).getScalar(cols);
+        INDArray topKArray = distArray.dup();
+        Nd4j.sort(topKArray, true);
 
         //create a labelList to store the number of votes
-        INDArray labelList = Nd4j.zeros(labels);
+        INDArray labelArray = Nd4j.zeros(labels);
 
         //voting
-        for (int i = 0; i < topKList.columns(); i++) {
-            int index = topKList.getInt(i);  //get topK index
+        for (int i = 0; i < topK; i++) {
+            double dist = topKArray.getDouble(i);  //get dist value
+            int index = BooleanIndexing.firstIndex(distArray, new EqualsCondition(dist)).getInt(0);  //get topK index
             int label = this.trainLabelArr.getInt(index);  //trans index to label
-            labelList.putScalar(label, labelList.getInt(label) + 1);  //votes accumulate
+            labelArray.putScalar(label, labelArray.getInt(label) + 1);  //votes accumulate
         }
-        return 5;
+
         //return max vote label
-        //return labelList.linearIndex(Nd4j.max(labelList).getInt(0));
+        return BooleanIndexing
+                .firstIndex(labelArray, new EqualsCondition(Nd4j.max(labelArray).getInt(0)))
+                .getInt(0);
     }
 
     private double modelTest(int topK, int labels) {
@@ -90,6 +92,10 @@ public class KNN extends ModelBase {
 
             if (label != this.testLabelArr.getLong(i)) {
                 errorCount += 1;
+            }
+
+            if (testCount % 1000 == 0) {
+                System.out.println("testing:" + testCount);
             }
         }
 

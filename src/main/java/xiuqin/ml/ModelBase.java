@@ -1,6 +1,9 @@
 package xiuqin.ml;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import xiuqin.utils.FileUtils;
 
 public abstract class ModelBase {
@@ -13,13 +16,21 @@ public abstract class ModelBase {
 
     //Mnsit data have 0-9 lable, two class for 1 of >=5, -1 of <5
     protected void transTwoClass(float point) {
+        BooleanIndexing.replaceWhere(trainLabelArr, -1, Conditions.lessThan(5));
+        BooleanIndexing.replaceWhere(trainLabelArr, 1, Conditions.greaterThanOrEqual(5));
+
+        /*
         for (int i = 0; i < trainLabelArr.columns(); i++) {
             trainLabelArr.putScalar(i, trainLabelArr.getFloat(i) >= point ? 1 : -1);
-        }
+        }*/
 
+        BooleanIndexing.replaceWhere(testLabelArr, -1, Conditions.lessThan(5));
+        BooleanIndexing.replaceWhere(testLabelArr, 1, Conditions.greaterThanOrEqual(5));
+
+        /*
         for (int i = 0; i < testLabelArr.columns(); i++) {
             testLabelArr.putScalar(i, testLabelArr.getFloat(i) >= point ? 1 : -1);
-        }
+        }*/
     }
 
     //normal
@@ -62,7 +73,8 @@ public abstract class ModelBase {
             this.testLabelArr = result.getColumn(0);
 
             //剩下的数据为data
-            this.testDataArr = result.getColumns(genDataColumn(result.columns()));
+            //this.testDataArr = result.getColumns(genDataColumn(result.columns()));
+            this.testDataArr = result.get(NDArrayIndex.all(), NDArrayIndex.interval(1, result.columns()));  //all row, n-1 columns
         } catch (Exception e) {
             e.printStackTrace();
         }
