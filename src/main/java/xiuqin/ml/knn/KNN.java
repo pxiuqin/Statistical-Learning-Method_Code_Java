@@ -85,7 +85,7 @@ public class KNN extends ModelBase {
     private double modelTest(int topK, int labels) {
         int errorCount = 0;
 
-        int testCount = this.testDataArr.rows();
+        int testCount = 200;    //this.testDataArr.rows();
         for (int i = 0; i < testCount; i++) {
             INDArray each = this.testDataArr.getRow(i);
             long label = getClosest(each, topK, labels);
@@ -94,8 +94,8 @@ public class KNN extends ModelBase {
                 errorCount += 1;
             }
 
-            if (testCount % 1000 == 0) {
-                System.out.println("testing:" + testCount);
+            if (i % 10 == 0) {
+                System.out.println("testing:" + i);
             }
         }
 
