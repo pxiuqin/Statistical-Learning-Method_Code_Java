@@ -27,6 +27,7 @@ public class KNN4KDTree extends ModelBase {
         knn.loadTestData(filePath, ",");
 
         //3、生成KDTree
+        System.out.println("create kdtree");
         knn.normalData(255.0f); //  归一化数据，在创建kdtree是我们构建一个0到1的区间边界
         knn.createKDTree();
 
@@ -52,6 +53,11 @@ public class KNN4KDTree extends ModelBase {
         int K = ps[0].length;
 
         this.kd = new KDTree(K, min, max);
+        //this.kd.insertByMedianFinding(hps);
+
+         for (int i = 0; i < num; i++) {
+             kd.insert(hps[i]);
+         }
     }
 
     /**
@@ -68,20 +74,8 @@ public class KNN4KDTree extends ModelBase {
 
         int index = 0;
         for (int i = 0; i < this.trainDataArr.rows(); i++) {
-            INDArray each = this.trainDataArr.getRow(i);
-
-            int count = 0;
-            for (int j = 0; j < nearestPoint.coords.length; j++) {
-                index = BooleanIndexing.firstIndex(each, new EqualsCondition(nearestPoint.coords[j]), j).getInt(0);
-
-                if (index < 0) {
-                    break;  //没找到跳出
-                } else {
-                    count++;  //找到了+1
-                }
-            }
-
-            if (count == nearestPoint.coords.length) {
+            double[] each = this.trainDataArr.getRow(i).toDoubleVector();
+            if (nearestPoint.coords==each) {
                 index = i;
                 break;
             }
@@ -94,7 +88,7 @@ public class KNN4KDTree extends ModelBase {
     private double modelTest(int topK, int labels) {
         int errorCount = 0;
 
-        int testCount = 200;    //this.testDataArr.rows();
+        int testCount = 20;    //this.testDataArr.rows();
         for (int i = 0; i < testCount; i++) {
             INDArray each = this.testDataArr.getRow(i);
             long label = getClosest(each, topK);
