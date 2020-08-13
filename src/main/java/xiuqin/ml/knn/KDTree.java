@@ -139,7 +139,7 @@ public class KDTree {
     }
 
     Node root;
-    int K = 2;
+    int K = 2;  //默认维度
     double RANGE = 1.0;
 
     // HyperPoint min, max are determined the range of KDTree Space
@@ -169,22 +169,34 @@ public class KDTree {
     public void insert(HyperPoint p) {
         HyperPoint hmin = new HyperPoint(min);
         HyperPoint hmax = new HyperPoint(max);
+
+        //首次插入根节点为null，当前p为根结点，后续每次把p进行k维切分后，保存在root中
         root = insert(root, p, hmin, hmax, 0);
     }
 
+    //递归插入，这里不考虑切分使用中位数开始
     private Node insert(Node r, HyperPoint p, HyperPoint hmin, HyperPoint hmax, int depth) {
         //if root is null
         if (r == null)
+            //根结点构造或叶子节点，根结点对应k维空间中包含所有实例点的超矩形区域，叶子节点的话保存当前实例点
             return new Node(new HyperSpace(hmin, hmax), p);
-        int k = depth % K;
-        double pivot = r.p.coords[k];
-        if (p.coords[k] < pivot) {  //left node
+
+        //通过递归方法，不断对k维空间进行切分，生成子结点。在超矩形区域（结点）上选择一个坐标轴和在此坐标轴上的一个切分点
+        int k = depth % K;  //对深度为depth的结点，选择切分的坐标轴为：depth[mod(K)]+1,这里没有+1？
+        double pivot = r.p.coords[k];  //选择切分点
+
+        //通过切分点确定一个超平面，这个超平面通过选定的切分点并垂直于选定的坐标轴，将当前超矩形区域切分为左右两个子区域（子结点）
+        if (p.coords[k] < pivot) {  //left node：左子结点对应坐标小于切分点的子区域
             hmax.coords[k] = pivot;  //next max node is pivot
-            r.left = insert(r.left, p, hmin, hmax, depth + 1);  //the left node of current node
+
+            //the left node of current node：将落在切分超平面上的实例点保存在根节点，
+            //其实当前left作为下一步的根，如果有left继续划分，没有就把当前节点保存成left
+            r.left = insert(r.left, p, hmin, hmax, depth + 1);
         } else {
-            hmin.coords[k] = pivot;
+            hmin.coords[k] = pivot;  //下一切分区域的最小边界就是当前切分点
             r.right = insert(r.right, p, hmin, hmax, depth + 1);
         }
+
         return r;
     }
 
@@ -216,7 +228,7 @@ public class KDTree {
         HyperPoint[][] kpoints = new HyperPoint[K][];
         SortComparator sc = new SortComparator();
 
-        // Presort
+        // Presort【K个维度分别排序】
         for (int k = 0; k < K; k++) {
             sc.setK(k);
             Arrays.sort(points, sc);
@@ -225,25 +237,26 @@ public class KDTree {
 
         Vector<HyperPoint> avails = new Vector<HyperPoint>();
         for (int i = 0; i < num; i++)
-            avails.add(kpoints[0][i]);
+            avails.add(kpoints[0][i]);  //用了x维度排序
 
         root = insertByPreSort(root, kpoints, hmin, hmax, 0, avails);
     }
 
+    //排序后进行KDTree构建
     private Node insertByPreSort(Node r, HyperPoint[][] kpoints, HyperPoint hmin, HyperPoint hmax, int depth, Vector<HyperPoint> avails) {
-        int num = avails.size();  //
+        int num = avails.size();  //插入节点数
 
         if (num == 0)
             return null;
         else {
             int k = depth % K;
             if (num == 1)
-                return new Node(new HyperSpace(hmin, hmax), avails.get(0));
-            int mid = (num - 1) / 2;
+                return new Node(new HyperSpace(hmin, hmax), avails.get(0));  //只插入一个节点
+            int mid = (num - 1) / 2;  //找到中位数下标
             if (r == null)
-                r = new Node(new HyperSpace(hmin, hmax), avails.get(mid));
+                r = new Node(new HyperSpace(hmin, hmax), avails.get(mid));  //构建根结点或叶子结点
             HyperPoint hmid1 = new HyperPoint(hmax);
-            hmid1.coords[k] = kpoints[k][mid].coords[k];
+            hmid1.coords[k] = kpoints[k][mid].coords[k];  //确定切分点
 
             // Splitting current points set
             HashMap<HyperPoint, Integer> split = new HashMap<HyperPoint, Integer>();
@@ -257,7 +270,7 @@ public class KDTree {
 
             // Generating left and right branch available points set
             Vector<HyperPoint> left = new Vector<HyperPoint>(), right = new Vector<HyperPoint>();
-            for (HyperPoint p : kpoints[k1])
+            for (HyperPoint p : kpoints[k1])  //确定那个排序维度
                 if (split.containsKey(p))
                     if (split.get(p) == 0)
                         left.addElement(p);
@@ -265,7 +278,7 @@ public class KDTree {
                         right.addElement(p);
 
             // Recursive Split
-            r.left = insertByPreSort(r.left, kpoints, hmin, hmid1, depth + 1, left);
+            r.left = insertByPreSort(r.left, kpoints, hmin, hmid1, depth + 1, left);  //左
             HyperPoint hmid2 = new HyperPoint(hmin);
             hmid1.coords[k] = kpoints[k][mid].coords[k];
             r.right = insertByPreSort(r.right, kpoints, hmid2, hmax, depth + 1, right);
@@ -287,10 +300,10 @@ public class KDTree {
         int i = beg, j = end + 1;
         while (true) {
             while (++i <= end && points[i].coords[k] < pivot.coords[k])
-                ;
+                ;  //从小于基准值开始
             while (--j > beg && points[j].coords[k] >= pivot.coords[k])
-                ;
-            if (i < j) {
+                ;  //从大于等于基准值开始
+            if (i < j) {  //交换
                 HyperPoint temp = points[i];
                 points[i] = points[j];
                 points[j] = temp;
@@ -302,7 +315,7 @@ public class KDTree {
         return j;
     }
 
-    // median of medians algorithm
+    // median of medians algorithm【目的是找中位数，这里通过参数k来确定是使用那个维度】
     // Refer to https://en.wikipedia.org/wiki/Median_of_medians
     private int findMedian(HyperPoint[] points, int k, int beg, int end) {
         if (beg > end)
@@ -312,13 +325,13 @@ public class KDTree {
         int mid = (beg + end) / 2;
         int i = beg, j = end;
         while (true) {
-            int t = partition(points, k, i, j);
+            int t = partition(points, k, i, j);  //快排，看是否中位数位置已经排序了，如果排序了就停止
             if (t == mid)
                 return t;
             else if (t > mid)
-                j = t - 1;
+                j = t - 1;   //去掉高于t的部分
             else
-                i = t + 1;
+                i = t + 1;  //去掉低于t的部分
         }
     }
 
@@ -328,18 +341,21 @@ public class KDTree {
         else if (i == j)
             return new Node(new HyperSpace(hmin, hmax), points[i]);
         int k = depth % K;
+
         // Find the index of median
-        int t = findMedian(points, k, i, j);
+        int t = findMedian(points, k, i, j);  //中位数下标
         HyperPoint p = points[t];
         if (r == null)
             r = new Node(new HyperSpace(hmin, hmax), p);
-        double pivot = p.coords[k];
+
+        double pivot = p.coords[k];  //切分点
         HyperPoint hmid1 = new HyperPoint(hmax);
         hmid1.coords[k] = p.coords[k];
         r.left = insertByMedianFinding(r.left, points, hmin, hmid1, depth + 1, i, t - 1);
         HyperPoint hmid2 = new HyperPoint(hmin);
         hmid2.coords[k] = pivot;
         r.right = insertByMedianFinding(r.right, points, hmid2, hmax, depth + 1, t + 1, j);
+
         return r;
     }
 
@@ -371,13 +387,14 @@ public class KDTree {
         if (r == null)
             return;
         double dist = r.p.squareDistanceTo(p);
+
         // update current best
         if (dist < ndist) {
             nmin = r.p;
             ndist = dist;
         }
         int k = depth % K;
-        double pivot = r.p.coords[k];
+        double pivot = r.p.coords[k];  //切分点
         if (p.coords[k] < pivot) {
             nearestPoint(r.left, p, depth + 1);
             // Hyper space intersect with right branch

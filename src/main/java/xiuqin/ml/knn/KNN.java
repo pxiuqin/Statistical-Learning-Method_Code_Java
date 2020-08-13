@@ -30,7 +30,7 @@ public class KNN extends ModelBase {
         double accuracy = knn.modelTest(topK, labels);
         System.out.println("accuracy rate is " + accuracy);
 
-        //5、计算所用时间
+        //4、计算所用时间
         System.out.println((System.currentTimeMillis() - currentTime) / 1000);
 
     }

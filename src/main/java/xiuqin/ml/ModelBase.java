@@ -49,6 +49,15 @@ public abstract class ModelBase {
         return result;
     }
 
+    protected int[] genColumnSeq(int cols) {
+        int[] result = new int[(cols)];
+        for (int i = 0; i < cols; i++) {
+            result[i] = i;
+        }
+
+        return result;
+    }
+
     //load train data
     protected void loadTrainData(String path, String separator) {
         try {
