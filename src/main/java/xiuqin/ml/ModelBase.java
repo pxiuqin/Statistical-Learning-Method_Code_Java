@@ -15,17 +15,17 @@ public abstract class ModelBase {
 
 
     //Mnsit data have 0-9 lable, two class for 1 of >=5, -1 of <5
-    protected void transTwoClass(float point) {
-        BooleanIndexing.replaceWhere(trainLabelArr, -1, Conditions.lessThan(5));
-        BooleanIndexing.replaceWhere(trainLabelArr, 1, Conditions.greaterThanOrEqual(5));
+    protected void normalLabel(float pivot) {
+        BooleanIndexing.replaceWhere(trainLabelArr, -1, Conditions.lessThan(pivot));
+        BooleanIndexing.replaceWhere(trainLabelArr, 1, Conditions.greaterThanOrEqual(pivot));
 
         /*
         for (int i = 0; i < trainLabelArr.columns(); i++) {
             trainLabelArr.putScalar(i, trainLabelArr.getFloat(i) >= point ? 1 : -1);
         }*/
 
-        BooleanIndexing.replaceWhere(testLabelArr, -1, Conditions.lessThan(5));
-        BooleanIndexing.replaceWhere(testLabelArr, 1, Conditions.greaterThanOrEqual(5));
+        BooleanIndexing.replaceWhere(testLabelArr, -1, Conditions.lessThan(pivot));
+        BooleanIndexing.replaceWhere(testLabelArr, 1, Conditions.greaterThanOrEqual(pivot));
 
         /*
         for (int i = 0; i < testLabelArr.columns(); i++) {
