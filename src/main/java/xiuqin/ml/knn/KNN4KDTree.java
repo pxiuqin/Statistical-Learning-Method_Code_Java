@@ -28,7 +28,7 @@ public class KNN4KDTree extends ModelBase {
 
         //3、生成KDTree
         System.out.println("create kdtree");
-        knn.normalData(255.0f); //  归一化数据，在创建kdtree是我们构建一个0到1的区间边界
+        knn.normalData(255.0); //  归一化数据，在创建kdtree是我们构建一个0到1的区间边界
         knn.createKDTree();
 
         //4、进行测试并获得准确率
@@ -70,17 +70,17 @@ public class KNN4KDTree extends ModelBase {
     private long getClosest(INDArray sample, int topK) {
         double[] vector = sample.toDoubleVector();
         HyperPoint hp = new HyperPoint(vector);
-        HyperPoint nearestPoint = kd.nearestPoint(hp);
+        INDArray distArray=Nd4j.createFromArray(Nd4j.createFromArray(kd.nearestPoint(hp).coords).toFloatVector());
 
         int index = 0;
         for (int i = 0; i < this.trainDataArr.rows(); i++) {
-            double[] each = this.trainDataArr.getRow(i).toDoubleVector();
-            if (nearestPoint.coords==each) {
+            //double[] each = this.trainDataArr.getRow(i).toDoubleVector();
+            if (distArray.equals(this.trainDataArr.getRow(i))) {
                 index = i;
                 break;
             }
         }
-        
+
         //return label
         return this.trainLabelArr.getLong(index);
     }
@@ -88,7 +88,7 @@ public class KNN4KDTree extends ModelBase {
     private double modelTest(int topK, int labels) {
         int errorCount = 0;
 
-        int testCount = 20;    //this.testDataArr.rows();
+        int testCount = 200;    //this.testDataArr.rows();
         for (int i = 0; i < testCount; i++) {
             INDArray each = this.testDataArr.getRow(i);
             long label = getClosest(each, topK);

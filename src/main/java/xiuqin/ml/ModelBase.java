@@ -34,7 +34,7 @@ public abstract class ModelBase {
     }
 
     //normal
-    protected void normalData(float sum) {
+    protected void normalData(double sum) {
         trainDataArr = trainDataArr.div(sum);
         testDataArr = testDataArr.div(sum);
     }
