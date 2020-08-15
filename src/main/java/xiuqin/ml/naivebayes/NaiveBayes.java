@@ -1,5 +1,6 @@
 package xiuqin.ml.naivebayes;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -37,6 +38,7 @@ public class NaiveBayes extends ModelBase {
         filePath = "data/Mnist/mnist_test.csv";
         System.out.println("read file:" + filePath);
         bayes.loadTestData(filePath, ",");
+        bayes.normalData(128);   //normalData,这里按照样本大小的数值来分成两类，大于128为1，小于等于为0，值最大为255
 
         //3、训练模型
         System.out.println("training data");
@@ -44,7 +46,7 @@ public class NaiveBayes extends ModelBase {
 
         //4、进行测试并获得准确率
         System.out.println("testing data");
-        double accuracy = bayes.modelTest(labels,features);
+        double accuracy = bayes.modelTest(labels, features);
         System.out.println("accuracy rate is " + accuracy);
 
         //5、计算所用时间
@@ -57,7 +59,8 @@ public class NaiveBayes extends ModelBase {
 
         //找出每种标签的先验概率
         for (int i = 0; i < labels; i++) {
-            double prob = (this.trainDataArr.eps(i).sumNumber().doubleValue() + 1) / (this.trainLabelArr.columns() + 10);
+            INDArray temp = this.trainLabelArr.eps(i).castTo(DataType.INT8);
+            double prob = (temp.sumNumber().doubleValue() + 1) / (this.trainLabelArr.columns() + 10);
             this.py.putScalar(i, prob);
         }
 
@@ -72,9 +75,9 @@ public class NaiveBayes extends ModelBase {
             //对样本的每一个维度特征进行遍历，完成确定标签下的累加和
             for (int j = 0; j < features; j++) {
                 int[] index = new int[]{label, j, sample.getInt(j)};
-
+                
                 //累加确定标签下的样本的累加和
-                this.px_y.putScalar(index, this.px_y.getScalar(index).getInt(0) + 1);  //累加
+                this.px_y.putScalar(index, this.px_y.getInt(index) + 1);  //累加
             }
         }
 
