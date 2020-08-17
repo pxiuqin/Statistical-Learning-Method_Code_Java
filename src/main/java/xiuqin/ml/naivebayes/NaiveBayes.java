@@ -59,12 +59,12 @@ public class NaiveBayes extends ModelBase {
 
         /**
          * 这部分合并到计算P(x|y)中了
-        //找出每种标签的先验概率
-        for (int i = 0; i < labels; i++) {
-            //INDArray temp = this.trainLabelArr.eq(i).castTo(DataType.INT8);
-            //int count=temp.sumNumber().doubleValue();
+         //找出每种标签的先验概率
+         for (int i = 0; i < labels; i++) {
+         //INDArray temp = this.trainLabelArr.eq(i).castTo(DataType.INT8);
+         //int count=temp.sumNumber().doubleValue();
 
-            *//*int count = 0;
+         *//*int count = 0;
             for (int j = 0; j < this.trainLabelArr.columns(); j++) {
                 if (this.trainLabelArr.getInt(j) == i) {
                     count += 1;
@@ -72,7 +72,7 @@ public class NaiveBayes extends ModelBase {
             }
             double prob = 1.0 * count / this.trainLabelArr.columns();  //给定常数是为了应对空值*//*
 
-            double prob = this.trainLabelArr.scan(new EqualsCondition(i)).doubleValue();
+            double prob = this.trainLabelArr.scan(new EqualsCondition(i)).doubleValue() / this.trainLabelArr.columns();
             this.py.putScalar(i, prob);
         }
 
@@ -111,7 +111,7 @@ public class NaiveBayes extends ModelBase {
             }
 
             //计算P(y)
-            double prob = this.trainLabelArr.scan(new EqualsCondition(i)).doubleValue();
+            double prob = this.trainLabelArr.scan(new EqualsCondition(i)).doubleValue() / this.trainLabelArr.columns();
             this.py.putScalar(i, Math.log(prob));  //直接log处理了
         }
     }
