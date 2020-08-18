@@ -75,6 +75,7 @@ public class DecisionTree extends ModelBase {
 
         for (int i = 0; i < LABEL_COUNT; i++) {
             int count = labelArr.scan(new EqualsCondition(i)).intValue();
+            if (count == 0) continue;
             double prob = 1.0 * count / labelArr.columns();
 
             HD += -1.0 * prob * (Math.log(prob) / Math.log(2));     //log2(prob)=Math.log(prob) / Math.log(2)
