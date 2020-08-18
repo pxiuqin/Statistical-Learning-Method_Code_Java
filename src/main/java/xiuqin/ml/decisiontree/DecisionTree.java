@@ -37,13 +37,14 @@ public class DecisionTree extends ModelBase {
         filePath = "data/Mnist/mnist_test.csv";
         System.out.println("read file:" + filePath);
         dt.loadTestData(filePath, ",");
+        dt.normalData(128);  //正则化处理下数据
 
         //3、生成DecisionTree
         System.out.println("create decision-tree");
         DTree dTree = dt.createTree(dt.trainDataArr, dt.trainLabelArr);
 
         //4、进行测试并获得准确率
-        System.out.println("training data");
+        System.out.println("testing data");
         double accuracy = dt.modelTest(dTree);
         System.out.println("accuracy rate is " + accuracy);
 
@@ -249,7 +250,7 @@ public class DecisionTree extends ModelBase {
                 errorCount += 1;
             }
 
-            if (i % 100 == 0) {
+            if (i % 500 == 0) {
                 System.out.println("testing:" + i);
             }
         }
