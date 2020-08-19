@@ -1,11 +1,10 @@
-package xiuqin.ml.naivebayes;
+package xiuqin.ml.naive_bayes;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.conditions.EqualsCondition;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import xiuqin.ml.ModelBase;
 
 public class NaiveBayes extends ModelBase {
