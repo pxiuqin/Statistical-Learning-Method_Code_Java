@@ -26,7 +26,7 @@ public class LogisticsRegression extends ModelBase {
 
         //3、训练
         System.out.println("training data");
-        lr.logisticsRegression(200);  //set iteration
+        lr.logisticsRegression(20);  //set iteration
 
         //4、进行测试并获得准确率
         System.out.println("testing data");
@@ -68,8 +68,8 @@ public class LogisticsRegression extends ModelBase {
 
                 //1.通过对数似然函数得：sum(yi*(w*xi)-log(1+exp(w*xi)))
                 //2.然后基于上述对数似然求导得：yi*xi-(xi*exp(w*xi)/(1+exp(w*xi)))
-                //3.使用梯度上升处理
-                INDArray wi = xi.mul(yi).sub(xi.mul(Math.log(wx)).div(1 - Math.log(wx)));
+                //3.使用梯度上升处理,可以理解成交叉熵的梯度[sum(xi*(yi-p(xi))]，当模型输出概率偏离于真实概率时，梯度较大，加快训练速度，当拟合值接近于真实概率时训练速度变缓慢
+                INDArray wi = xi.mul(yi).sub(xi.mul(Math.log(wx)/(1 - Math.log(wx))));
                 this.w = this.w.add(wi.mul(h));
             }
         }
