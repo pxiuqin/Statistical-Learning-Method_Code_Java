@@ -6,7 +6,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import xiuqin.ml.ModelBase;
 
 public class LogisticsRegression extends ModelBase {
-    INDArray w;
+    INDArray w;  //model params
 
     public static void main(String[] args) {
         LogisticsRegression lr = new LogisticsRegression();
