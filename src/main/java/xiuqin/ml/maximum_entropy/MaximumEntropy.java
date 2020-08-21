@@ -235,6 +235,8 @@ public class MaximumEntropy extends ModelBase {
     }
 
     private void maxEntropyTrain() {
+        this.w = Nd4j.zeros(this.n);
+
         for (int i = 0; i < this.iterations; i++) {
             System.out.println("start iteration is " + (i + 1));
 
@@ -248,6 +250,9 @@ public class MaximumEntropy extends ModelBase {
                 //依据“6.3.1 改进的迭代尺度法” 式6.34计算
                 sigmaArr.putScalar(j, (1.0 / this.trainDataArr.rows()) * Math.log(this.ep_xy.getDouble(j) / epxy.getDouble(j)));
             }
+
+            //按照算法6.1步骤二中的（b）更新w
+            this.w = this.w.add(sigmaArr);
         }
     }
 
