@@ -2,11 +2,23 @@ package xiuqin.ml.logistics_regression;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import xiuqin.ml.ModelBase;
 
 public class LogisticsRegression extends ModelBase {
     INDArray w;  //model params
+
+    //Mnsit有0-9是个标记，由于是二分类任务，所以将标记0的作为1，其余为0
+    @Override
+    protected void normalLabel(float pivot) {
+        BooleanIndexing.replaceWhere(trainLabelArr, 1, Conditions.equals(pivot));
+        BooleanIndexing.replaceWhere(trainLabelArr, 0, Conditions.greaterThan(pivot));
+
+        BooleanIndexing.replaceWhere(testLabelArr, 1, Conditions.equals(pivot));
+        BooleanIndexing.replaceWhere(testLabelArr, 0, Conditions.greaterThan(pivot));
+    }
 
     public static void main(String[] args) {
         LogisticsRegression lr = new LogisticsRegression();
@@ -21,12 +33,12 @@ public class LogisticsRegression extends ModelBase {
         filePath = "data/Mnist/mnist_test.csv";
         System.out.println("read file:" + filePath);
         lr.loadTestData(filePath, ",");
-        lr.normalLabel(5);
+        lr.normalLabel(0);
         lr.normalData(255);  //正则化处理下数据
 
         //3、训练
         System.out.println("training data");
-        lr.logisticsRegression(20);  //set iteration
+        lr.logisticsRegression(200);  //set iteration
 
         //4、进行测试并获得准确率
         System.out.println("testing data");
