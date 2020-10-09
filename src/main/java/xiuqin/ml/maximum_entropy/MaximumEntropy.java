@@ -17,7 +17,8 @@ public class MaximumEntropy extends ModelBase {
     Map<String, Integer> xy2index = new HashMap<>();   //把所有idfxy打平转换成有指针
     Map<Integer, String> index2xy = new HashMap<>();   //相反操作通过index获取xy
     INDArray ep_xy;   //Ep_xy期望值
-    int iterations = 500;  //迭代次数
+    int iterations = 5;  //迭代次数
+    int M=10000;  //IIS算法中使用的f#(x,y)为常数，见书91页
 
     //Mnsit有0-9是个标记，由于是二分类任务，所以将标记0的作为1，其余为0
     @Override
@@ -110,10 +111,10 @@ public class MaximumEntropy extends ModelBase {
         for (int i = 0; i < this.trainDataArr.columns(); i++) {
             //遍历每对特征(x,y)
             for (Map.Entry<String, Integer> each : this.fxy.get(i).fxy.entrySet()) {
-                int index = this.xy2index.get(String.format("%s_%s_%s", i, each.getKey(), each.getValue()));
+                int index = this.xy2index.get(String.format("%s_%s", i, each.getKey()));  //xy已经进行了拼接
 
                 //计算每种特征的概率[P(x,y)]
-                double prob = ep_xy.getDouble(index) + 1.0 * each.getValue() / this.trainDataArr.rows();
+                double prob = 1.0 * each.getValue() / this.trainDataArr.rows();
                 ep_xy.putScalar(index, prob);
             }
         }
@@ -197,7 +198,7 @@ public class MaximumEntropy extends ModelBase {
         for (int i = 0; i < this.trainDataArr.columns(); i++) {
             //遍历每对特征(x,y)
             for (Map.Entry<String, Integer> each : this.fxy.get(i).fxy.entrySet()) {
-                String xy = String.format("%s_%s_%s", i, each.getKey(), each.getValue());
+                String xy = String.format("%s_%s", i, each.getKey());
                 this.xy2index.put(xy, index);
                 this.index2xy.put(index, xy);
                 index++;
@@ -251,14 +252,14 @@ public class MaximumEntropy extends ModelBase {
             System.out.println("start iteration is " + (i + 1));
 
             //计算“6.2.3 最大熵模型的学习”中的第二个期望（83页最上方那个）
-            INDArray epxy = calcEpxy();
+            INDArray epxy = calcEpxy();  //每次迭代都要用到前一步的w来重新计算
 
             //使用的是IIS，所以设置sigma列表
             INDArray sigmaArr = Nd4j.zeros(this.n);
 
             for (int j = 0; j < this.n; j++) {
                 //依据“6.3.1 改进的迭代尺度法” 式6.34计算
-                sigmaArr.putScalar(j, (1.0 / this.trainDataArr.rows()) * Math.log(this.ep_xy.getDouble(j) / epxy.getDouble(j)));
+                sigmaArr.putScalar(j, (1.0 / this.M) * Math.log(this.ep_xy.getDouble(j) / epxy.getDouble(j)));
             }
 
             //按照算法6.1步骤二中的（b）更新w
