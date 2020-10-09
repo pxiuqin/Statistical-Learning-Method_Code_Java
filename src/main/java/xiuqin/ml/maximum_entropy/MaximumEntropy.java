@@ -68,30 +68,31 @@ public class MaximumEntropy extends ModelBase {
         System.out.println((System.currentTimeMillis() - currentTime) / 1000);
     }
 
-    //计算特征函数f(x, y)关于模型P(Y|X)与经验分布P_(X, Y)的期望值（P后带下划线“_”表示P上方的横线
+    //计算特征函数f(x, y)关于模型P(Y|X)与经验分布P_(X)的期望值（P后带下划线“_”表示P上方的波浪线【见书82-83页】
     private INDArray calcEpxy() {
-        INDArray epxy = Nd4j.zeros(this.n);
+        INDArray epxy = Nd4j.zeros(this.n);  //条件概率期望的个数
 
         for (int i = 0; i < this.trainDataArr.rows(); i++) {
             INDArray row = this.trainDataArr.getRow(i);
 
             //初始化公式中的P(y|x)列表
-            double[] pwxy = new double[2];
+            double[] pwxy = new double[2];  //因为特征函数给定的是0和1
 
-            //计算P(y = 0 } X),注：程序中X表示是一个样本的全部特征，x表示单个特征，这里是全部特征的一个样本
+            //计算P(y = 0 | X),注：程序中X表示是一个样本的全部特征，x表示单个特征，这里是全部特征的一个样本
             pwxy[0] = calcPwy_x(row, 0);
 
-            //计算P(y = 1 } X)
+            //计算P(y = 1 | X)
             pwxy[1] = calcPwy_x(row, 1);
 
+            //针对一个训练样本，处理每个条件概率期望
             for (int j = 0; j < row.columns(); j++) {
                 for (int k = 0; k < 2; k++) {
-                    String fixy = String.format("%s_%s_%s", j, row.getInt(j), k);
-                    if (this.xy2index.containsKey(fixy)) {
+                    String fi_x_y = String.format("%s_%s_%s", j, row.getInt(j), k);  //这里k做了简化，因为label处理成0和1了
+                    if (this.xy2index.containsKey(fi_x_y)) {
                         //在xy->index字典中指定当前特征i，以及(x, y)对：(xi, y)，读取其index
-                        int index = this.xy2index.get(fixy);
+                        int index = this.xy2index.get(fi_x_y);
 
-                        //计算每种特征的概率
+                        //计算每种特征的概率[P(x)*P(y|x)]
                         double prob = epxy.getDouble(index) + (1.0 / this.trainDataArr.rows()) * pwxy[k];
                         epxy.putScalar(index, prob);
                     }
@@ -99,19 +100,21 @@ public class MaximumEntropy extends ModelBase {
             }
         }
 
-        return null;
+        return epxy;
     }
 
+    //计算特征函数f(x, y)关于经验分布P_(X,Y)的期望值（P后带下划线“_”表示P上方的波浪线【见书82页】
     private INDArray calcEp_xy() {
-        INDArray ep_xy = Nd4j.zeros(this.n);
+        INDArray ep_xy = Nd4j.zeros(this.n);   //(x,y)出现的个数
 
         for (int i = 0; i < this.trainDataArr.columns(); i++) {
             //遍历每对特征(x,y)
             for (Map.Entry<String, Integer> each : this.fxy.get(i).fxy.entrySet()) {
-                int index = this.xy2index.get(String.format("%s_%s", i, each.getKey()));
+                int index = this.xy2index.get(String.format("%s_%s_%s", i, each.getKey(), each.getValue()));
 
-                //计算每种特征的概率
-                ep_xy.putScalar(index, 1.0 * each.getValue() / this.trainDataArr.rows());
+                //计算每种特征的概率[P(x,y)]
+                double prob = ep_xy.getDouble(index) + 1.0 * each.getValue() / this.trainDataArr.rows();
+                ep_xy.putScalar(index, prob);
             }
         }
 
@@ -122,6 +125,10 @@ public class MaximumEntropy extends ModelBase {
     class IdFxy {
         int id;
         HashMap<String, Integer> fxy;
+
+        public IdFxy(int id) {
+            this.id = id;
+        }
 
         public IdFxy(int id, int x, int y) {
             this.id = id;
@@ -160,18 +167,18 @@ public class MaximumEntropy extends ModelBase {
 
     //计算(x, y)在训练集中出现过的次数
     private Map<Integer, IdFxy> calcFxy() {
-        Map<Integer, IdFxy> result = new HashMap<>();
+        Map<Integer, IdFxy> result = new HashMap<>();  //按照特征下标来记录(x,y)出现的次数
 
-        for (int i = 0; i < this.trainDataArr.rows(); i++) {
-            INDArray row = this.trainDataArr.getRow(i);
-            for (int j = 0; j < row.columns(); j++) {
-                if (result.containsKey(j)) {
-                    result.get(j).accumulateFxy(i, j);
-                } else {
-                    IdFxy fxy = new IdFxy(j, i, j);
-                    result.put(j, fxy);
-                }
+        for (int i = 0; i < this.trainDataArr.columns(); i++) {
+            INDArray column = this.trainDataArr.getColumn(i);
+            IdFxy fxy = new IdFxy(i);  //构建一个空的fxy
+            for (int j = 0; j < column.length(); j++) {
+                int x = this.trainDataArr.getInt(j, i);
+                int y = this.trainLabelArr.getInt(j);
+                fxy.accumulateFxy(x, y);
             }
+
+            result.put(i, fxy);
         }
 
         return result;
@@ -190,8 +197,10 @@ public class MaximumEntropy extends ModelBase {
         for (int i = 0; i < this.trainDataArr.columns(); i++) {
             //遍历每对特征(x,y)
             for (Map.Entry<String, Integer> each : this.fxy.get(i).fxy.entrySet()) {
-                this.xy2index.put(String.format("%s_%s", i, each.getKey()), index);
-                this.index2xy.put(index, each.getKey());
+                String xy = String.format("%s_%s_%s", i, each.getKey(), each.getValue());
+                this.xy2index.put(xy, index);
+                this.index2xy.put(index, xy);
+                index++;
             }
         }
 
@@ -199,16 +208,16 @@ public class MaximumEntropy extends ModelBase {
         this.ep_xy = calcEp_xy();
     }
 
-    //计算得到的Pw(Y|X)
+    //计算得到的Pw(Y|X)【见书85页】
     private double calcPwy_x(INDArray xi, int y) {
         double num = 0;
         double Z = 0;
 
         for (int i = 0; i < this.trainDataArr.columns(); i++) {
-            String fixy = String.format("%s_%s_%s", i, xi.getInt(i), y);
-            if (this.xy2index.containsKey(fixy)) {
+            String fi_x_y = String.format("%s_%s_%s", i, xi.getInt(i), y);
+            if (this.xy2index.containsKey(fi_x_y)) {
                 //在xy->index字典中指定当前特征i，以及(x, y)对：(xi, y)，读取其index
-                int index = this.xy2index.get(fixy);
+                int index = this.xy2index.get(fi_x_y);
 
                 /**
                  * 分子是wi和fi(x，y)的连乘再求和，最后指数
@@ -220,20 +229,21 @@ public class MaximumEntropy extends ModelBase {
             }
 
             //同时计算其他一种标签y时候的分子，下面的z并不是全部的分母，再加上上式的分子以后才是完整的分母，即z = z + numerator
-            fixy = String.format("%s_%s_%s", i, xi.getInt(i), 1 - y);
-            if (this.xy2index.containsKey(fixy)) {
-                int index = this.xy2index.get(fixy);
+            fi_x_y = String.format("%s_%s_%s", i, xi.getInt(i), 1 - y);
+            if (this.xy2index.containsKey(fi_x_y)) {
+                int index = this.xy2index.get(fi_x_y);
                 Z += this.w.getInt(index);
             }
         }
 
-        //log处理
-        num = Math.log(num);
-        Z = Math.log(Z) + num;
+        //指数处理
+        num = Math.exp(num);
+        Z = Math.exp(Z) + num;  //Σ(y1,y2)
 
-        return num / Z;
+        return num / Z;  //正则化处理
     }
 
+    //最大熵模型训练
     private void maxEntropyTrain() {
         this.w = Nd4j.zeros(this.n);
 
@@ -257,7 +267,7 @@ public class MaximumEntropy extends ModelBase {
     }
 
     private int predict(INDArray sample) {
-        INDArray result = Nd4j.zeros(2);
+        INDArray result = Nd4j.zeros(2);  //创建两个标签的结果
 
         //每个标签测试下概率
         for (int i = 0; i < result.columns(); i++) {
