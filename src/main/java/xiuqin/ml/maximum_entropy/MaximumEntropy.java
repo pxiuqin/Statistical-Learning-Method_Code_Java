@@ -258,7 +258,7 @@ public class MaximumEntropy extends ModelBase {
             INDArray sigmaArr = Nd4j.zeros(this.n);
 
             for (int j = 0; j < this.n; j++) {
-                //依据“6.3.1 改进的迭代尺度法” 式6.34计算
+                //依据“6.3.1 改进的迭代尺度法” 式6.34计算,见书91页
                 sigmaArr.putScalar(j, (1.0 / this.M) * Math.log(this.ep_xy.getDouble(j) / epxy.getDouble(j)));
             }
 
