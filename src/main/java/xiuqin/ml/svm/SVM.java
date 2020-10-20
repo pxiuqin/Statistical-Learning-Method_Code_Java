@@ -46,7 +46,6 @@ public class SVM extends ModelBase {
 
     //使用高斯核计算核函数
     private INDArray calcKernel() {
-        int m = this.trainDataArr.rows();
         INDArray kernel = Nd4j.zeros(m, m);  //初始化高斯核结果矩阵 大小 = 训练集长度m * 训练集长度m
 
         //循环遍历每个样本
@@ -73,12 +72,12 @@ public class SVM extends ModelBase {
                 double xz = calcGaussKernel(X, Z);
 
                 //将Xi*Xj的结果存放入k[i][j]和k[j][i]中
-                k.putScalar(i, j, xz);
-                k.putScalar(j, i, xz);
+                kernel.putScalar(i, j, xz);
+                kernel.putScalar(j, i, xz);
             }
         }
 
-        return k;
+        return kernel;
     }
 
     //使用高斯核计算核函数
