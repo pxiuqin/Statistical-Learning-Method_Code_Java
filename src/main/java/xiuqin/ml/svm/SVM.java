@@ -29,16 +29,16 @@ public class SVM extends ModelBase {
     //Mnsit有0-9是个标记，由于是二分类任务，所以将标记0的作为1，其余为-1
     @Override
     protected void normalLabel(float pivot) {
-        BooleanIndexing.replaceWhere(trainLabelArr, 1, Conditions.equals(pivot));
         BooleanIndexing.replaceWhere(trainLabelArr, -1, Conditions.greaterThan(pivot));
+        BooleanIndexing.replaceWhere(trainLabelArr, 1, Conditions.equals(pivot));
 
-        BooleanIndexing.replaceWhere(testLabelArr, 1, Conditions.equals(pivot));
         BooleanIndexing.replaceWhere(testLabelArr, -1, Conditions.greaterThan(pivot));
+        BooleanIndexing.replaceWhere(testLabelArr, 1, Conditions.equals(pivot));
     }
 
     //初始化处理
     private void init() {
-        this.m = this.trainLabelArr.length();
+        this.m = 1000;//this.trainLabelArr.length();
         this.k = calcKernel();
         this.alpha = Nd4j.zeros(this.m);
         this.E = Nd4j.zeros(this.m);
@@ -50,7 +50,9 @@ public class SVM extends ModelBase {
 
         //循环遍历每个样本
         for (int i = 0; i < m; i++) {
-            if (i % 100 == 0) System.out.println("construct the kernel:" + i);
+            if (i % 100 == 0) {
+                System.out.println(String.format("construct the kernel:%d %d", i, this.m));
+            }
 
             //获取X训练样本
             INDArray X = this.trainDataArr.getRow(i);
@@ -245,7 +247,9 @@ public class SVM extends ModelBase {
                     }
 
                     //如果两者相等，说明该变量无法在优化了，直接跳到下一次循环即可
-                    if (L == H) continue;
+                    if (L == H) {
+                        continue;
+                    }
 
                     /**
                      * 计算alpha的新增，根据7.4.1两个变量二次规划的求解方法公式:7.106更新a2，见书127
@@ -326,7 +330,7 @@ public class SVM extends ModelBase {
 
     //预测过程
     private int predict(INDArray x) {
-        int result = 0;
+        double result = 0;
 
         /**
          * 遍历所有支持向量，计算求和式,如果是非支持向量，求和子式必为0，没有必要进行计算
