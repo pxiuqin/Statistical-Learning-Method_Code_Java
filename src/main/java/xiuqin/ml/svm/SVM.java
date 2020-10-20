@@ -378,7 +378,6 @@ public class SVM extends ModelBase {
         long currentTime = System.currentTimeMillis();
 
         //1、读取训练数据
-        System.out.println("loading data");
         String filePath = "data/Mnist/mnist_train.csv";
         System.out.println("read file:" + filePath);
         svm.loadTrainData(filePath, ",");
@@ -391,6 +390,7 @@ public class SVM extends ModelBase {
         svm.normalData(255);  //正则化处理下数据
 
         //3、训练
+        System.out.println("init params");
         svm.init();  //加载完数据后进行初始化
         System.out.println("training data");
         svm.train(); //训练数据
