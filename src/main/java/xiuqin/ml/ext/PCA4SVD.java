@@ -12,7 +12,7 @@ public class PCA4SVD {
         System.out.println(hao);
 
         //PCA h = new PCA(hao);
-        //System.out.println(h);
+        //System.out.println(h.estimateVariance(hao.getRow(5),1));
 
         INDArray result = pca.pca(hao, 1, true);
         System.out.println(result);
